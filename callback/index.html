@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Now Playing - Connecting Spotify</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #111; color: #eee;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card {
+    max-width: 400px; padding: 40px; text-align: center;
+  }
+  h1 { font-size: 20px; margin-bottom: 12px; }
+  p { color: #888; font-size: 14px; line-height: 1.6; }
+  .spinner {
+    width: 32px; height: 32px; border: 3px solid #333;
+    border-top-color: #1DB954; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error { color: #e74c3c; }
+  .fallback { display: none; margin-top: 20px; }
+  .fallback code {
+    display: block; background: #222; padding: 12px;
+    border-radius: 8px; font-size: 12px; word-break: break-all;
+    margin: 12px 0; color: #1DB954;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="spinner" id="spinner"></div>
+  <h1 id="title">Connecting to your display...</h1>
+  <p id="msg">Redirecting to Now Playing display.</p>
+  <div class="fallback" id="fallback">
+    <p>Copy this URL and paste it into your display's web UI:</p>
+    <code id="fallback-url"></code>
+  </div>
+</div>
+<script>
+  var params = new URLSearchParams(window.location.search);
+  var code = params.get('code');
+  var state = params.get('state');
+  var error = params.get('error');
+
+  if (error) {
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('title').textContent = 'Authorization denied';
+    document.getElementById('title').className = 'error';
+    document.getElementById('msg').textContent = 'You denied the Spotify request. Close this tab and try again.';
+  } else if (code) {
+    var piUrl = 'http://nowplaying.local/callback?code=' + encodeURIComponent(code);
+    if (state) piUrl += '&state=' + encodeURIComponent(state);
+
+    // Try redirecting to the Pi
+    window.location.href = piUrl;
+
+    // If redirect doesn't work after 3 seconds, show fallback
+    setTimeout(function() {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('title').textContent = 'Redirect not working?';
+      document.getElementById('msg').textContent = 'Your display might not be reachable at nowplaying.local. Open your display’s IP address in your browser and connect Spotify from there, or copy this URL:';
+      document.getElementById('fallback').style.display = 'block';
+      document.getElementById('fallback-url').textContent = piUrl;
+    }, 3000);
+  } else {
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('title').textContent = 'Missing authorization code';
+    document.getElementById('title').className = 'error';
+    document.getElementById('msg').textContent = 'Something went wrong. Close this tab and try again.';
+  }
+</script>
+</body>
+</html>
